@@ -1,34 +1,35 @@
 import { initializeApp } from "firebase/app";
-import { 
-  getAuth, 
-  signInWithEmailAndPassword, 
-  createUserWithEmailAndPassword, 
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   User as FirebaseUser
 } from "firebase/auth";
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
-  getDocs, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  query, 
-  where 
+import {
+  getFirestore,
+  collection,
+  addDoc,
+  getDocs,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  where
 } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDNmhsS6Q2gqya0yBYi-NuU-_ESNtPQ40w",
-  authDomain: "responsible-clarity-89z5m.firebaseapp.com",
-  projectId: "responsible-clarity-89z5m",
-  storageBucket: "responsible-clarity-89z5m.firebasestorage.app",
-  messagingSenderId: "809873435081",
-  appId: "1:809873435081:web:a99c6c7dfbca4220472018"
+  apiKey: "AIzaSyBWUOAH_aGDrSIfxclur9cJBxY-ZzYgomg",
+  authDomain: "deadline-guardian-ai-455c1.firebaseapp.com",
+  projectId: "deadline-guardian-ai-455c1",
+  storageBucket: "deadline-guardian-ai-455c1.firebasestorage.app",
+  messagingSenderId: "26113563744",
+  appId: "1:26113563744:web:448273de009f0a119eb705",
+  measurementId: "G-D7HVXXQ97M"
 };
 
-const databaseId = "ai-studio-e0386cd2-1305-4360-9049-7c555b3184cf";
+const databaseId = "default";
 
 let app;
 let auth: any;
