@@ -1,0 +1,50 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Deadline and productivity task metadata",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "deadlineDate": { "type": "string" },
+        "deadlineTime": { "type": "string" },
+        "estimatedHours": { "type": "integer" },
+        "difficulty": { "type": "string", "enum": ["Low", "Medium", "High"] },
+        "category": { "type": "string", "enum": ["Academic", "Professional", "Personal", "Health", "Finance", "Other"] },
+        "status": { "type": "string", "enum": ["Not Started", "In Progress", "Completed"] },
+        "priority": { "type": "string", "enum": ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
+        "urgencyScore": { "type": "integer" },
+        "riskOfFailure": { "type": "integer" },
+        "explanation": { "type": "string" },
+        "nextRecommendedAction": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "deadlineDate"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User private collections"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "User critical deadlines and assignments"
+    }
+  }
+}

@@ -1,0 +1,60 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Primitive Definitions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Validation helper for Task
+    function isValidTask(data) {
+      return data.userId is string 
+        && data.title is string && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 2000
+        && data.deadlineDate is string && data.deadlineDate.size() <= 50
+        && data.deadlineTime is string && data.deadlineTime.size() <= 50
+        && data.estimatedHours is int
+        && data.difficulty is string && (data.difficulty == 'Low' || data.difficulty == 'Medium' || data.difficulty == 'High')
+        && data.category is string && (data.category == 'Academic' || data.category == 'Professional' || data.category == 'Personal' || data.category == 'Health' || data.category == 'Finance' || data.category == 'Other')
+        && data.status is string && (data.status == 'Not Started' || data.status == 'In Progress' || data.status == 'Completed')
+        && data.priority is string && (data.priority == 'LOW' || data.priority == 'MEDIUM' || data.priority == 'HIGH' || data.priority == 'CRITICAL')
+        && data.urgencyScore is int
+        && data.riskOfFailure is int
+        && data.explanation is string && data.explanation.size() <= 5000
+        && data.nextRecommendedAction is string && data.nextRecommendedAction.size() <= 5000
+        && data.createdAt is string && data.createdAt.size() <= 100;
+    }
+
+    // 2. Rules for Tasks collection
+    match /tasks/{taskId} {
+      allow get: if isSignedIn() && resource.data.userId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.userId == request.auth.uid;
+      
+      allow create: if isSignedIn() 
+        && isValidId(taskId)
+        && request.resource.data.userId == request.auth.uid
+        && isValidTask(request.resource.data);
+
+      allow update: if isSignedIn()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == request.auth.uid
+        && isValidTask(request.resource.data);
+
+      allow delete: if isSignedIn() 
+        && resource.data.userId == request.auth.uid;
+    }
+  }
+}
