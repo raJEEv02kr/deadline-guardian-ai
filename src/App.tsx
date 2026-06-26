@@ -4,11 +4,11 @@
  */
 
 import React, { useState, useEffect, useRef } from "react";
-import { 
-  Bell, Calendar, Clock, LayoutDashboard, Plus, Send, CheckCircle2, 
-  Trash2, AlertTriangle, Sparkles, LogIn, LogOut, ArrowRight, BookOpen, 
-  User, Mic, Upload, Image as ImageIcon, Check, Menu, X, MicOff, Star, 
-  ShieldAlert, BarChart3, ChevronRight, Activity, CalendarDays, Brain, 
+import {
+  Bell, Calendar, Clock, LayoutDashboard, Plus, Send, CheckCircle2,
+  Trash2, AlertTriangle, Sparkles, LogIn, LogOut, ArrowRight, BookOpen,
+  User, Mic, Upload, Image as ImageIcon, Check, Menu, X, MicOff, Star,
+  ShieldAlert, BarChart3, ChevronRight, Activity, CalendarDays, Brain,
   Lightbulb, HelpCircle, AlertCircle, FileText
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
@@ -62,6 +62,10 @@ export default function App() {
   const [planExplanation, setPlanExplanation] = useState("");
   const [isGeneratingDailyPlan, setIsGeneratingDailyPlan] = useState(false);
 
+  // Live Clock Widget State
+  const [currentTime, setCurrentTime] = useState<Date>(new Date());
+  const clockIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
   // Voice Assistant Status
   const [isVoiceListening, setIsVoiceListening] = useState(false);
   const [voiceTranscript, setVoiceTranscript] = useState("");
@@ -86,6 +90,20 @@ export default function App() {
       });
       return () => unsubscribe();
     }
+  }, []);
+
+  // Live Clock Widget - Update time every second
+  useEffect(() => {
+    setCurrentTime(new Date());
+    clockIntervalRef.current = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => {
+      if (clockIntervalRef.current) {
+        clearInterval(clockIntervalRef.current);
+      }
+    };
   }, []);
 
   // Sync tasks on user state change
@@ -190,17 +208,17 @@ export default function App() {
     try {
       // 1. Add base task to database (or localstorage fallback)
       const savedTask = await dbService.addTask(currentUser.uid, baseTask);
-      
+
       // Add immediately to local UI
       setTasks(prev => [...prev, savedTask]);
 
       // 2. Perform background AI analysis asynchronously
       const aiResponse = await geminiService.analyzeTask(savedTask);
-      
+
       // 3. Update database and local state with complete AI priority recommendations
       const finalTask = { ...savedTask, ...aiResponse };
       await dbService.updateTask(currentUser.uid, savedTask.id!, finalTask);
-      
+
       setTasks(prev => prev.map(t => t.id === savedTask.id ? finalTask : t));
 
       // Reset Task Creation Form
@@ -303,7 +321,7 @@ export default function App() {
     try {
       const base64DataOnly = scannedPreview.split(",")[1];
       const extractedTask = await geminiService.scanTaskImage(base64DataOnly, imageFile.type);
-      
+
       // Auto-populate form
       setTaskTitle(extractedTask.title || "");
       setTaskDesc(extractedTask.description || "");
@@ -312,7 +330,7 @@ export default function App() {
       setTaskHrs(extractedTask.estimatedHours || 3);
       setTaskDifficulty(extractedTask.difficulty || "Medium");
       setTaskCategory(extractedTask.category || "Professional");
-      
+
       setActiveTab("tasks"); // Route back to task board
     } catch (e) {
       console.error("AI Scanning error: ", e);
@@ -362,12 +380,12 @@ export default function App() {
       // Instantly pass user query to Chatbot Agent
       setIsCoachTyping(true);
       setChatMessages(prev => [...prev, { role: "user", text: `[Voice Command] ${speechToText}` }]);
-      
+
       try {
         const coachReply = await geminiService.chatWithCoach(speechToText, tasks, []);
         setChatMessages(prev => [...prev, { role: "assistant", text: coachReply }]);
         setActiveTab("coach"); // Auto route to chat console
-        
+
         // Speak response out loud using Web Speech synthesis
         if (window.speechSynthesis) {
           const synth = window.speechSynthesis;
@@ -408,7 +426,7 @@ export default function App() {
       <div className="glow-blob-3" />
       <div className="noise-bg" />
       <div className="grid-bg" />
-      
+
       {/* LANDING PAGE VIEW */}
       {!currentUser && authMode === "landing" && (
         <div className="flex-1 flex flex-col justify-between relative z-10">
@@ -423,13 +441,13 @@ export default function App() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <button 
+              <button
                 onClick={bypassAuth}
                 className="hidden sm:inline-flex px-4 py-2 text-sm bg-white/5 border border-white/10 hover:bg-white/10 text-[#E7D4C2] rounded-xl transition-all cursor-pointer font-semibold"
               >
                 Instant Judge Demo Mode
               </button>
-              <button 
+              <button
                 onClick={() => setAuthMode("login")}
                 className="px-5 py-2 text-sm bg-[#B87333] hover:bg-[#9A5A25] text-white font-bold rounded-xl transition-all shadow-md shadow-[#B87333]/30 cursor-pointer border border-[#B87333]/30 hover:shadow-[#B87333]/50"
               >
@@ -451,13 +469,13 @@ export default function App() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 mb-20 w-full justify-center max-w-md">
-              <button 
+              <button
                 onClick={() => setAuthMode("login")}
                 className="px-8 py-4 bg-gradient-to-r from-[#B87333] to-[#9A5A25] hover:shadow-lg hover:shadow-[#B87333]/30 text-white font-extrabold rounded-xl transition-all flex items-center justify-center gap-2 group cursor-pointer border border-[#B87333]/20"
               >
                 Try AI Assistant <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </button>
-              <button 
+              <button
                 onClick={bypassAuth}
                 className="px-8 py-4 bg-white/5 hover:bg-white/10 text-white font-extrabold rounded-xl border border-white/10 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
               >
@@ -502,8 +520,8 @@ export default function App() {
         <div className="flex-1 flex items-center justify-center p-6 relative z-10">
           <div className="w-full max-w-md bg-[#161514]/65 backdrop-blur-3xl border border-white/10 p-8 rounded-3xl shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-[3px] bg-gradient-to-r from-[#B87333] to-[#E7D4C2] animate-pulse-glow" />
-            <button 
-              onClick={() => setAuthMode("landing")} 
+            <button
+              onClick={() => setAuthMode("landing")}
               className="absolute top-4 right-4 text-[#E7D4C2]/70 hover:text-white transition-all text-xs border border-white/10 bg-white/5 hover:bg-white/10 px-3 py-1.5 rounded-xl cursor-pointer font-bold"
             >
               ← Back
@@ -532,8 +550,8 @@ export default function App() {
             <form onSubmit={handleAuthSubmit} className="space-y-4 text-left">
               <div>
                 <label className="block text-xs font-bold text-[#E7D4C2]/80 uppercase tracking-wider mb-1.5">Email Address</label>
-                <input 
-                  type="email" 
+                <input
+                  type="email"
                   value={authEmail}
                   onChange={(e) => setAuthEmail(e.target.value)}
                   placeholder="name@university.com"
@@ -543,8 +561,8 @@ export default function App() {
               </div>
               <div>
                 <label className="block text-xs font-bold text-[#E7D4C2]/80 uppercase tracking-wider mb-1.5">Password</label>
-                <input 
-                  type="password" 
+                <input
+                  type="password"
                   value={authPassword}
                   onChange={(e) => setAuthPassword(e.target.value)}
                   placeholder="••••••••"
@@ -552,8 +570,8 @@ export default function App() {
                   required
                 />
               </div>
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="w-full bg-gradient-to-r from-[#B87333] to-[#9A5A25] hover:shadow-lg hover:shadow-[#B87333]/20 text-white text-sm font-extrabold py-3 rounded-xl transition-all cursor-pointer border border-[#B87333]/20 hover:scale-[1.01]"
               >
                 {authMode === "login" ? "Enter Dashboard" : "Sign Up & Initialize"}
@@ -561,7 +579,7 @@ export default function App() {
             </form>
 
             <div className="mt-6 pt-6 border-t border-white/5 text-center">
-              <button 
+              <button
                 onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}
                 className="text-xs text-[#B87333] hover:text-[#9A5A25] transition-all font-bold"
               >
@@ -571,7 +589,7 @@ export default function App() {
 
             <div className="mt-4 text-center">
               <span className="text-[11px] text-[#E7D4C2]/50 block mb-2">— OR —</span>
-              <button 
+              <button
                 onClick={bypassAuth}
                 className="text-xs font-extrabold px-4 py-2.5 bg-white/5 border border-white/10 text-[#E7D4C2] rounded-xl hover:bg-white/10 transition-all w-full cursor-pointer"
               >
@@ -585,13 +603,13 @@ export default function App() {
       {/* WORKSPACE APP DASHBOARD */}
       {currentUser && (
         <div className="flex-1 flex overflow-hidden">
-          
+
           {/* SIDEBAR NAVIGATION */}
-          <aside 
-            style={{ 
-              backgroundColor: "rgba(22, 21, 20, 0.45)", 
-              backdropFilter: "blur(35px)", 
-              WebkitBackdropFilter: "blur(35px)" 
+          <aside
+            style={{
+              backgroundColor: "rgba(22, 21, 20, 0.45)",
+              backdropFilter: "blur(35px)",
+              WebkitBackdropFilter: "blur(35px)"
             }}
             className={`m-4 mr-0 border border-white/10 flex flex-col justify-between transition-all duration-300 relative z-10 shadow-2xl rounded-3xl overflow-hidden ${isSidebarOpen ? "w-64" : "w-20"}`}
           >
@@ -609,7 +627,7 @@ export default function App() {
                     </div>
                   )}
                 </div>
-                <button 
+                <button
                   onClick={() => setIsSidebarOpen(!isSidebarOpen)}
                   className="p-1.5 hover:bg-white/5 rounded-lg text-white/50 hover:text-white transition-all cursor-pointer"
                 >
@@ -634,13 +652,13 @@ export default function App() {
                       key={item.id}
                       onClick={() => setActiveTab(item.id)}
                       className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm font-bold transition-all cursor-pointer relative border border-transparent ${
-                        isActive 
-                          ? "bg-[#B87333]/20 text-[#B87333] border-[#B87333]/30 shadow-[0_0_15px_rgba(184,115,51,0.15)]" 
+                        isActive
+                          ? "bg-[#B87333]/20 text-[#B87333] border-[#B87333]/30 shadow-[0_0_15px_rgba(184,115,51,0.15)]"
                           : "text-[#E7D4C2]/70 hover:text-white hover:bg-white/5"
                       }`}
                     >
                       {isActive && (
-                        <motion.div 
+                        <motion.div
                           layoutId="activeNavIndicator"
                           className="absolute left-1 w-1 h-5 bg-[#B87333] rounded-full"
                           transition={{ type: "spring", stiffness: 350, damping: 30 }}
@@ -657,11 +675,11 @@ export default function App() {
             {/* Bottom Actions */}
             <div className="p-2 border-t border-white/5 space-y-1.5">
               {/* Voice Floating trigger inside menu */}
-              <button 
+              <button
                 onClick={toggleSpeechRecognition}
                 className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm font-bold transition-all cursor-pointer border ${
-                  isVoiceListening 
-                    ? "bg-red-500/20 text-red-400 border-red-500/30 animate-pulse" 
+                  isVoiceListening
+                    ? "bg-red-500/20 text-red-400 border-red-500/30 animate-pulse"
                     : "text-[#E7D4C2]/70 hover:text-white hover:bg-white/5 border-transparent"
                 }`}
               >
@@ -669,7 +687,7 @@ export default function App() {
                 {isSidebarOpen && <span>{isVoiceListening ? "Listening..." : "Voice Command"}</span>}
               </button>
 
-              <button 
+              <button
                 onClick={handleLogout}
                 className="w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-sm font-bold text-red-400 hover:text-red-300 hover:bg-red-500/5 transition-all cursor-pointer"
               >
@@ -681,7 +699,7 @@ export default function App() {
 
           {/* MAIN PAGE CONTAINER */}
           <main className="flex-1 overflow-y-auto p-6 md:p-8 relative">
-            
+
             {/* Top Bar notifications and alerts */}
             <header className="flex justify-between items-center mb-8 pb-4 border-b border-white/10">
               <div>
@@ -700,10 +718,10 @@ export default function App() {
 
             {/* PAGE RENDERS */}
             <AnimatePresence mode="wait">
-              
+
               {/* TAB 1: DASHBOARD */}
               {activeTab === "dashboard" && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
@@ -725,7 +743,7 @@ export default function App() {
 
                     return (
                       <div className="space-y-6">
-                        
+
                         {/* 1. GUARDIAN AI DAILY BRIEF CARD (Large Premium Hero Card) */}
                         <div className="p-6 md:p-8 rounded-3xl border border-white/10 shadow-2xl relative overflow-hidden text-left glass-premium bg-gradient-to-br from-white/5 to-[#B87333]/5">
                           <div className="absolute -right-10 -top-10 w-44 h-44 bg-[#B87333]/15 rounded-full blur-3xl animate-pulse-glow" />
@@ -741,9 +759,9 @@ export default function App() {
                                 Our core AI neural models analyzed your current workload database. You have <span className="text-rose-400 font-extrabold">{pendingTasks.length} pending obligations</span> requiring roughly <span className="text-[#B87333] font-extrabold">{hoursNeeded} continuous hours</span> of deep cognitive effort.
                               </p>
                             </div>
-                            
+
                             <div className="flex flex-wrap gap-3 shrink-0">
-                              <button 
+                              <button
                                 onClick={() => {
                                   generatePlannerBlock();
                                   setActiveTab("planner");
@@ -754,7 +772,7 @@ export default function App() {
                                 <Sparkles className="w-4 h-4 animate-pulse" />
                                 {isGeneratingDailyPlan ? "Compiling..." : "Generate Today's Plan"}
                               </button>
-                              <button 
+                              <button
                                 onClick={() => setIsChatWidgetOpen(true)}
                                 className="px-5 py-3 bg-white/5 border border-white/10 hover:bg-white/10 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-2 cursor-pointer"
                               >
@@ -767,13 +785,13 @@ export default function App() {
 
                         {/* MAIN LAYOUT GRID */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 text-left">
-                          
+
                           {/* LEFT COLUMN: TWO COLS SPAN FOR PRIMARY ANALYTICAL WIDGETS */}
                           <div className="lg:col-span-2 space-y-6">
-                            
+
                             {/* ROW 1: AI FOCUS TARGET + AI EXPLANATION SIDE-BY-SIDE */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              
+
                               {/* 1. AI Recommended Focus Target */}
                               <div className="p-6 rounded-3xl border border-white/10 flex flex-col justify-between relative overflow-hidden group shadow-xl hover:shadow-[#B87333]/5 transition-all duration-300 glass-premium bg-white/5">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-[#B87333]/5 rounded-full blur-2xl group-hover:bg-[#B87333]/10 transition-colors" />
@@ -830,7 +848,7 @@ export default function App() {
 
                                 {topRecommendedFocus && (
                                   <div className="mt-4">
-                                    <button 
+                                    <button
                                       onClick={() => triggerBreakdownAnalysis(topRecommendedFocus)}
                                       className="text-xs font-bold bg-[#B87333] hover:bg-[#9A5A25] text-white px-4 py-2.5 rounded-xl transition-all w-full flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-[#B87333]/20"
                                     >
@@ -896,7 +914,7 @@ export default function App() {
 
                             {/* ROW 2: AI DEADLINE RISK PREDICTOR & PRODUCTIVITY HEALTH RINGS */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              
+
                               {/* 3. AI Deadline Risk Predictor */}
                               <div className="p-6 rounded-3xl border border-white/10 flex flex-col justify-between relative overflow-hidden glass-premium bg-white/5">
                                 <div>
@@ -906,10 +924,10 @@ export default function App() {
                                       <h3 className="text-sm font-bold text-white">Deadline Risk Index</h3>
                                     </div>
                                     <span className={`text-[10px] px-2.5 py-0.5 rounded-full font-black tracking-wider uppercase border ${
-                                      avgRiskOfFailure > 70 
-                                        ? "bg-rose-500/10 border-rose-500/20 text-rose-400" 
-                                        : avgRiskOfFailure > 40 
-                                          ? "bg-amber-500/10 border-amber-500/20 text-amber-400" 
+                                      avgRiskOfFailure > 70
+                                        ? "bg-rose-500/10 border-rose-500/20 text-rose-400"
+                                        : avgRiskOfFailure > 40
+                                          ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
                                           : "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
                                     }`}>
                                       {avgRiskOfFailure > 70 ? "CRITICAL RISK" : avgRiskOfFailure > 40 ? "ELEVATED RISK" : "SECURE METRIC"}
@@ -928,19 +946,19 @@ export default function App() {
                                       </svg>
                                       <span className="text-xl font-black text-white">{avgRiskOfFailure}%</span>
                                     </div>
-                                    
+
                                     <div className="space-y-1">
                                       <h4 className="text-xs font-bold text-white">AI Dynamic Projections</h4>
                                       <p className="text-xs text-[#E7D4C2]/70 leading-relaxed">
-                                        {pendingTasks.length > 0 
-                                          ? `Workload delay increases risk of failure for ${topRecommendedFocus?.title} soon.` 
+                                        {pendingTasks.length > 0
+                                          ? `Workload delay increases risk of failure for ${topRecommendedFocus?.title} soon.`
                                           : "All commitment timelines remain secure and optimally managed."}
                                       </p>
                                     </div>
                                   </div>
                                 </div>
 
-                                <button 
+                                <button
                                   onClick={() => {
                                     generatePlannerBlock();
                                     setActiveTab("planner");
@@ -1017,7 +1035,7 @@ export default function App() {
 
                             {/* ROW 3: AI ACTION CENTER & GAMIFICATION */}
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                              
+
                               {/* 5. AI Action Center */}
                               <div className="p-6 rounded-3xl border border-white/10 flex flex-col justify-between relative overflow-hidden glass-premium bg-white/5">
                                 <div>
@@ -1036,7 +1054,7 @@ export default function App() {
                                       <h4 className="text-xs font-bold text-white mt-1">{topRecommendedFocus ? topRecommendedFocus.title : "Draft ML report layout"}</h4>
                                       <p className="text-[10px] text-[#E7D4C2]/60 mt-0.5">Reason: Deadline approaching faster than expected</p>
                                       {topRecommendedFocus && (
-                                        <button 
+                                        <button
                                           onClick={() => triggerBreakdownAnalysis(topRecommendedFocus)}
                                           className="mt-2 text-[10px] font-bold text-white bg-[#B87333] hover:bg-[#9A5A25] px-2.5 py-1 rounded"
                                         >
@@ -1057,7 +1075,7 @@ export default function App() {
                                 </div>
 
                                 <div className="mt-4">
-                                  <button 
+                                  <button
                                     onClick={() => setActiveTab("planner")}
                                     className="text-xs font-bold text-[#B87333] hover:underline cursor-pointer"
                                   >
@@ -1082,7 +1100,7 @@ export default function App() {
                                       <div className="space-y-1">
                                         <h4 className="text-xs font-black text-white">🏆 Deadline Defender</h4>
                                         <p className="text-[10px] text-[#E7D4C2]/70">Level Progress: 82% to Level 9</p>
-                                        
+
                                         <div className="w-36 h-2 bg-white/5 rounded-full overflow-hidden">
                                           <div className="h-full bg-amber-500 rounded-full" style={{ width: "82%" }} />
                                         </div>
@@ -1110,10 +1128,114 @@ export default function App() {
                             </div>
 
                           </div>
-                          
+
                           {/* RIGHT COLUMN: SINGLE TAB SPAN FOR DIRECT ACTION TIMELINE, HEATMAPS, AND LOGS */}
                           <div className="space-y-6">
-                            
+
+                            {/* LIVE GUARDIAN CLOCK WIDGET */}
+                            <motion.div
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.5, ease: "easeOut" }}
+                              className="p-6 rounded-3xl border border-white/10 text-left glass-premium bg-white/5 relative overflow-hidden group"
+                            >
+                              {/* Subtle glow effect on hover */}
+                              <div className="absolute -right-8 -top-8 w-32 h-32 bg-[#B87333]/5 rounded-full blur-2xl group-hover:bg-[#B87333]/10 transition-colors duration-500" />
+
+                              {/* Header with title and icons */}
+                              <div className="flex items-center justify-between mb-6 pb-4 border-b border-white/5 relative z-10">
+                                <div className="flex items-center gap-3">
+                                  <div className="p-2.5 bg-[#B87333]/15 text-[#B87333] rounded-xl border border-[#B87333]/25 shadow-[0_0_12px_rgba(184,115,51,0.2)]">
+                                    <Clock className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                      Live Guardian Clock
+                                      <ShieldAlert className="w-4 h-4 text-[#B87333] animate-pulse" />
+                                    </h3>
+                                    <p className="text-[10px] text-[#E7D4C2]/60 font-medium mt-0.5">Real-time deadline precision</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Main clock display */}
+                              <div className="space-y-5 relative z-10">
+                                {/* Time Display */}
+                                <div className="text-center space-y-3 py-4">
+                                  <div className="flex items-center justify-center gap-2 group/time">
+                                    <motion.div
+                                      key={`hours-${currentTime.getHours()}`}
+                                      initial={{ opacity: 0.5, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className="text-5xl font-black text-white tracking-tighter"
+                                    >
+                                      {String(currentTime.getHours()).padStart(2, "0")}
+                                    </motion.div>
+
+                                    <motion.div
+                                      animate={{ opacity: [1, 0.3, 1] }}
+                                      transition={{ duration: 1.2, repeat: Infinity }}
+                                      className="text-4xl font-black text-[#B87333]"
+                                    >
+                                      :
+                                    </motion.div>
+
+                                    <motion.div
+                                      key={`minutes-${currentTime.getMinutes()}`}
+                                      initial={{ opacity: 0.5, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className="text-5xl font-black text-white tracking-tighter"
+                                    >
+                                      {String(currentTime.getMinutes()).padStart(2, "0")}
+                                    </motion.div>
+
+                                    <motion.div
+                                      animate={{ opacity: [1, 0.3, 1] }}
+                                      transition={{ duration: 1.2, repeat: Infinity }}
+                                      className="text-4xl font-black text-[#B87333]"
+                                    >
+                                      :
+                                    </motion.div>
+
+                                    <motion.div
+                                      key={`seconds-${currentTime.getSeconds()}`}
+                                      initial={{ opacity: 0.5, y: 10 }}
+                                      animate={{ opacity: 1, y: 0 }}
+                                      transition={{ duration: 0.3 }}
+                                      className="text-3xl font-black text-[#B87333] tracking-tighter"
+                                    >
+                                      {String(currentTime.getSeconds()).padStart(2, "0")}
+                                    </motion.div>
+                                  </div>
+                                </div>
+
+                                {/* Date and Day Info */}
+                                <div className="space-y-2 text-center bg-white/5 border border-white/5 rounded-2xl p-4">
+                                  <div className="text-xs font-bold text-[#E7D4C2] uppercase tracking-wider">
+                                    {currentTime.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}
+                                  </div>
+                                  <div className="text-[11px] text-[#B87333] font-black">
+                                    {currentTime.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }).split(",")[1]?.trim() || "IST"}
+                                  </div>
+                                </div>
+
+                                {/* LIVE Indicator */}
+                                <div className="flex items-center justify-center gap-2 pt-2">
+                                  <motion.div
+                                    animate={{
+                                      scale: [1, 1.2, 1],
+                                      opacity: [1, 0.6, 1]
+                                    }}
+                                    transition={{ duration: 2, repeat: Infinity }}
+                                    className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.6)]"
+                                  />
+                                  <span className="text-[10px] font-black text-rose-400 uppercase tracking-wider">LIVE</span>
+                                </div>
+                              </div>
+                            </motion.div>
+
                             {/* 7. Smart Day Timeline */}
                             <div className="p-6 rounded-3xl border border-white/10 text-left glass-premium bg-white/5">
                               <div className="flex items-center justify-between mb-4 pb-2 border-b border-white/5">
@@ -1142,8 +1264,8 @@ export default function App() {
                                 <div className="text-center py-6 border border-dashed border-white/10 rounded-2xl bg-white/5">
                                   <CalendarDays className="w-8 h-8 text-[#B87333]/40 mx-auto mb-2 animate-bounce" />
                                   <p className="text-xs text-[#E7D4C2]/60 leading-relaxed px-2">No timetable generated. Create staminal focus schedule blocks now.</p>
-                                  <button 
-                                    onClick={generatePlannerBlock} 
+                                  <button
+                                    onClick={generatePlannerBlock}
                                     disabled={isGeneratingDailyPlan}
                                     className="mt-3 px-3 py-1.5 bg-[#B87333] hover:bg-[#9A5A25] text-white text-xs font-semibold rounded-lg transition-all w-full cursor-pointer shadow-md shadow-[#B87333]/15"
                                   >
@@ -1219,7 +1341,7 @@ export default function App() {
 
               {/* TAB 2: TASKS */}
               {activeTab === "tasks" && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
@@ -1227,7 +1349,7 @@ export default function App() {
                   className="space-y-6"
                 >
                   <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    
+
                     {/* TASK CREATION FORM */}
                     <div className="border border-white/10 p-6 rounded-3xl text-left h-fit lg:col-span-1 shadow-2xl glass-premium bg-white/5">
                       <h3 className="text-lg font-black text-white mb-4 flex items-center gap-2">
@@ -1237,7 +1359,7 @@ export default function App() {
                       <form onSubmit={handleCreateTask} className="space-y-4">
                         <div>
                           <label className="block text-xs font-black text-[#E7D4C2]/70 uppercase tracking-wider mb-1">Task Title *</label>
-                          <input 
+                          <input
                             type="text"
                             value={taskTitle}
                             onChange={(e) => setTaskTitle(e.target.value)}
@@ -1249,7 +1371,7 @@ export default function App() {
 
                         <div>
                           <label className="block text-xs font-black text-[#E7D4C2]/70 uppercase tracking-wider mb-1">Task Description</label>
-                          <textarea 
+                          <textarea
                             value={taskDesc}
                             onChange={(e) => setTaskDesc(e.target.value)}
                             placeholder="Complete writing guidelines and format datasets."
@@ -1260,7 +1382,7 @@ export default function App() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-black text-[#E7D4C2]/70 uppercase tracking-wider mb-1">Deadline Date *</label>
-                            <input 
+                            <input
                               type="date"
                               value={taskDeadlineDate}
                               onChange={(e) => setTaskDeadlineDate(e.target.value)}
@@ -1270,7 +1392,7 @@ export default function App() {
                           </div>
                           <div>
                             <label className="block text-xs font-black text-[#E7D4C2]/70 uppercase tracking-wider mb-1">Deadline Time</label>
-                            <input 
+                            <input
                               type="time"
                               value={taskDeadlineTime}
                               onChange={(e) => setTaskDeadlineTime(e.target.value)}
@@ -1282,7 +1404,7 @@ export default function App() {
                         <div className="grid grid-cols-2 gap-3">
                           <div>
                             <label className="block text-xs font-black text-[#E7D4C2]/70 uppercase tracking-wider mb-1">Est. Effort (Hrs)</label>
-                            <input 
+                            <input
                               type="number"
                               min={1}
                               max={100}
@@ -1293,7 +1415,7 @@ export default function App() {
                           </div>
                           <div>
                             <label className="block text-xs font-black text-[#E7D4C2]/70 uppercase tracking-wider mb-1">Difficulty</label>
-                            <select 
+                            <select
                               value={taskDifficulty}
                               onChange={(e) => setTaskDifficulty(e.target.value as any)}
                               className="w-full bg-[#1C1A19] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#B87333] focus:ring-1 focus:ring-[#B87333]/25 transition-all"
@@ -1307,7 +1429,7 @@ export default function App() {
 
                         <div>
                           <label className="block text-xs font-black text-[#E7D4C2]/70 uppercase tracking-wider mb-1">Workload Category</label>
-                          <select 
+                          <select
                             value={taskCategory}
                             onChange={(e) => setTaskCategory(e.target.value as any)}
                             className="w-full bg-[#1C1A19] border border-white/10 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-[#B87333] focus:ring-1 focus:ring-[#B87333]/25 transition-all"
@@ -1321,7 +1443,7 @@ export default function App() {
                           </select>
                         </div>
 
-                        <button 
+                        <button
                           type="submit"
                           className="w-full bg-[#B87333] hover:bg-[#9A5A25] text-white py-3 rounded-xl text-sm font-bold transition-all shadow-lg shadow-[#B87333]/25 cursor-pointer flex items-center justify-center gap-1.5"
                         >
@@ -1332,17 +1454,17 @@ export default function App() {
 
                     {/* TASK PIPELINE WORKSPACE */}
                     <div className="lg:col-span-2 space-y-6">
-                      
+
                       {/* Active Task Breakdown Detail Viewer */}
                       {activeBreakdownTask && (
                         <div className="p-6 border border-white/10 rounded-3xl text-left relative overflow-hidden shadow-2xl glass-premium bg-white/5">
-                          <button 
+                          <button
                             onClick={() => setActiveBreakdownTask(null)}
                             className="absolute top-4 right-4 text-xs text-[#E7D4C2]/80 hover:text-white border border-white/10 px-2.5 py-1 rounded-lg cursor-pointer bg-white/5 transition-colors"
                           >
                             Close Breakdown
                           </button>
-                          
+
                           <div className="flex items-center gap-2 mb-2 text-[#B87333] font-black text-xs uppercase tracking-wider">
                             <Brain className="w-4 h-4 animate-pulse" /> AI Decomposed Task Workspace
                           </div>
@@ -1359,12 +1481,12 @@ export default function App() {
                                 const stepKey = `${activeBreakdownTask.id}_${idx}`;
                                 const isDone = completedSteps[stepKey] || false;
                                 return (
-                                  <div 
-                                    key={idx} 
+                                  <div
+                                    key={idx}
                                     onClick={() => setCompletedSteps(prev => ({ ...prev, [stepKey]: !isDone }))}
                                     className={`p-3.5 rounded-2xl border flex items-start gap-3 transition-all cursor-pointer ${
-                                      isDone 
-                                        ? "bg-emerald-500/10 border-emerald-500/20 text-[#E7D4C2]/50" 
+                                      isDone
+                                        ? "bg-emerald-500/10 border-emerald-500/20 text-[#E7D4C2]/50"
                                         : "bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10"
                                     }`}
                                   >
@@ -1400,26 +1522,26 @@ export default function App() {
                             {tasks.map((task, idx) => {
                               const isCompleted = task.status === "Completed";
                               return (
-                                <div 
-                                  key={idx} 
+                                <div
+                                  key={idx}
                                   className={`p-5 rounded-2xl text-left relative transition-all duration-200 border-l-4 glass-premium ${
-                                    isCompleted 
-                                      ? "opacity-40 border border-white/5 bg-white/1" 
-                                      : task.priority === "CRITICAL" 
-                                        ? "border-white/10 border-l-rose-500 shadow-md" 
-                                        : task.priority === "HIGH" 
-                                          ? "border-white/10 border-l-amber-500 shadow-md" 
+                                    isCompleted
+                                      ? "opacity-40 border border-white/5 bg-white/1"
+                                      : task.priority === "CRITICAL"
+                                        ? "border-white/10 border-l-rose-500 shadow-md"
+                                        : task.priority === "HIGH"
+                                          ? "border-white/10 border-l-amber-500 shadow-md"
                                           : "border-white/10 border-l-[#B87333] shadow-md"
                                   }`}
                                 >
                                   {/* Top row */}
                                   <div className="flex items-start justify-between gap-4">
                                     <div className="flex items-start gap-3">
-                                      <button 
+                                      <button
                                         onClick={() => toggleTaskStatus(task.id!, task.status)}
                                         className={`p-1.5 rounded-full border shrink-0 mt-1 cursor-pointer transition-all ${
-                                          isCompleted 
-                                            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400" 
+                                          isCompleted
+                                            ? "bg-emerald-500/20 border-emerald-500 text-emerald-400"
                                             : "border-white/20 hover:border-[#B87333]"
                                         }`}
                                       >
@@ -1428,7 +1550,7 @@ export default function App() {
                                       <div>
                                         <h4 className={`text-base font-black text-white ${isCompleted ? "line-through text-white/40" : ""}`}>{task.title}</h4>
                                         <p className="text-xs text-[#E7D4C2]/70 mt-1 line-clamp-2">{task.description || "No description provided."}</p>
-                                        
+
                                         {/* Auto-Steps Indicator badge if steps exist */}
                                         {Object.keys(completedSteps).some(k => k.startsWith(task.id!)) && (
                                           <div className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#B87333]/15 text-[#B87333] rounded-lg border border-[#B87333]/25 text-[10px] font-bold">
@@ -1440,14 +1562,14 @@ export default function App() {
 
                                     {/* Action items */}
                                     <div className="flex items-center gap-1">
-                                      <button 
+                                      <button
                                         onClick={() => triggerBreakdownAnalysis(task)}
                                         title="AI Breakdown"
                                         className="p-1.5 hover:bg-white/5 rounded-lg text-[#B87333] hover:text-[#9A5A25] cursor-pointer transition-colors"
                                       >
                                         <Brain className="w-4 h-4" />
                                       </button>
-                                      <button 
+                                      <button
                                         onClick={() => handleTaskDeletion(task.id!)}
                                         title="Delete Task"
                                         className="p-1.5 hover:bg-white/5 rounded-lg text-red-400 hover:text-red-300 cursor-pointer transition-colors"
@@ -1467,10 +1589,10 @@ export default function App() {
                                     {!isCompleted && (
                                       <div className="flex items-center gap-2">
                                         <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider ${
-                                          task.priority === "CRITICAL" 
-                                            ? "bg-rose-500/15 text-rose-400 border border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.15)]" 
-                                            : task.priority === "HIGH" 
-                                              ? "bg-amber-500/15 text-amber-400 border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.15)]" 
+                                          task.priority === "CRITICAL"
+                                            ? "bg-rose-500/15 text-rose-400 border border-rose-500/20 shadow-[0_0_8px_rgba(244,63,94,0.15)]"
+                                            : task.priority === "HIGH"
+                                              ? "bg-amber-500/15 text-amber-400 border border-amber-500/20 shadow-[0_0_8px_rgba(245,158,11,0.15)]"
                                               : "bg-[#B87333]/15 text-[#B87333] border border-[#B87333]/20 shadow-[0_0_8px_rgba(184,115,51,0.15)]"
                                         }`}>
                                           {task.priority} Urgency
@@ -1503,7 +1625,7 @@ export default function App() {
 
               {/* TAB 3: DAILY PLANNER */}
               {activeTab === "planner" && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
@@ -1519,12 +1641,12 @@ export default function App() {
                         <p className="text-xs text-[#E7D4C2]/70 mt-1">Autonomous layout mapping of focus blocks computed relative to pending dates.</p>
                       </div>
 
-                      <button 
+                      <button
                         onClick={generatePlannerBlock}
                         disabled={isGeneratingDailyPlan}
                         className="px-5 py-2.5 bg-[#B87333] hover:bg-[#9A5A25] text-white font-black text-xs rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-[#B87333]/25 cursor-pointer disabled:opacity-50"
                       >
-                        <Sparkles className="w-4 h-4" /> 
+                        <Sparkles className="w-4 h-4" />
                         {isGeneratingDailyPlan ? "Assembling Blocks..." : "Compile Smart Timetable"}
                       </button>
                     </div>
@@ -1536,7 +1658,7 @@ export default function App() {
                       </div>
                     ) : dailyPlan.length > 0 ? (
                       <div className="space-y-6">
-                        
+
                         {/* Interactive Timetable list */}
                         <div className="relative border-l-2 border-white/10 pl-6 ml-3 space-y-6 text-left">
                           {dailyPlan.map((item, idx) => (
@@ -1586,7 +1708,7 @@ export default function App() {
 
               {/* TAB 4: PRODUCTIVITY COACH CHAT */}
               {activeTab === "coach" && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
@@ -1607,7 +1729,7 @@ export default function App() {
                       </div>
 
                       {/* Clear history button */}
-                      <button 
+                      <button
                         onClick={() => setChatMessages([{ role: "assistant", text: "Welcome back! What are we focusing on today?" }])}
                         className="text-xs text-[#E7D4C2]/80 hover:text-white hover:bg-white/10 px-3 py-1.5 rounded-lg border border-white/10 bg-white/5 cursor-pointer transition-colors"
                       >
@@ -1647,8 +1769,8 @@ export default function App() {
                               </div>
                             )}
                             <div className={`max-w-[75%] p-3.5 rounded-2xl text-xs leading-relaxed ${
-                              isAI 
-                                ? "bg-white/5 text-white rounded-tl-none border border-white/10 shadow-md" 
+                              isAI
+                                ? "bg-white/5 text-white rounded-tl-none border border-white/10 shadow-md"
                                 : "bg-[#B87333]/10 text-white rounded-tr-none border border-[#B87333]/30 shadow-md"
                             }`}>
                               <p className="whitespace-pre-wrap">{msg.text}</p>
@@ -1673,7 +1795,7 @@ export default function App() {
 
                     {/* Footer query input */}
                     <div className="p-3 bg-white/5 border-t border-white/10 flex gap-2">
-                      <input 
+                      <input
                         type="text"
                         value={chatInput}
                         onChange={(e) => setChatInput(e.target.value)}
@@ -1681,7 +1803,7 @@ export default function App() {
                         placeholder="Ask: 'Which of my academic targets has the highest deadline risk?'"
                         className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-xs text-white placeholder-white/30 focus:outline-none focus:border-[#B87333] transition-all focus:ring-1 focus:ring-[#B87333]/25"
                       />
-                      <button 
+                      <button
                         onClick={sendCoachMessage}
                         className="p-3 bg-[#B87333] hover:bg-[#9A5A25] text-white rounded-xl transition-all shadow-lg shadow-[#B87333]/25 cursor-pointer flex items-center justify-center"
                       >
@@ -1695,7 +1817,7 @@ export default function App() {
 
               {/* TAB 5: IMAGE TASK SCANNER */}
               {activeTab === "scanner" && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
@@ -1714,18 +1836,18 @@ export default function App() {
 
                     {/* Drag and Drop Container */}
                     <div className="border-2 border-dashed border-white/15 rounded-3xl p-8 text-center hover:border-[#B87333]/50 transition-all relative bg-white/1">
-                      <input 
-                        type="file" 
+                      <input
+                        type="file"
                         accept="image/*"
                         onChange={handleImageChange}
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                       />
-                      
+
                       {scannedPreview ? (
                         <div className="space-y-4">
-                          <img 
-                            src={scannedPreview} 
-                            alt="Scanned Preview" 
+                          <img
+                            src={scannedPreview}
+                            alt="Scanned Preview"
                             className="max-h-48 rounded-2xl mx-auto border border-white/10 shadow-lg"
                             referrerPolicy="no-referrer"
                           />
@@ -1742,7 +1864,7 @@ export default function App() {
 
                     {scannedPreview && (
                       <div className="mt-6 flex justify-end gap-3">
-                        <button 
+                        <button
                           onClick={() => {
                             setImageFile(null);
                             setScannedPreview(null);
@@ -1752,7 +1874,7 @@ export default function App() {
                           Cancel
                         </button>
 
-                        <button 
+                        <button
                           onClick={executeImageScan}
                           disabled={isScanningImage}
                           className="px-5 py-2.5 bg-[#B87333] hover:bg-[#9A5A25] text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50 transition-colors"
@@ -1769,7 +1891,7 @@ export default function App() {
 
               {/* TAB 6: ANALYTICS */}
               {activeTab === "analytics" && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -15 }}
@@ -1777,11 +1899,11 @@ export default function App() {
                   className="space-y-6"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    
+
                     {/* Category Distribution chart */}
                     <div className="border border-white/10 p-6 rounded-3xl text-left shadow-2xl glass-premium bg-white/5">
                       <h3 className="text-sm font-black text-white mb-4">Pipeline Category Share</h3>
-                      
+
                       {tasks.length > 0 ? (
                         <div className="space-y-4">
                           {["Academic", "Professional", "Personal", "Health", "Finance", "Other"].map((cat) => {
@@ -1794,7 +1916,7 @@ export default function App() {
                                   <span className="text-white font-black">{catTasks.length} ({ratio}%)</span>
                                 </div>
                                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                  <div 
+                                  <div
                                     className="h-full bg-[#B87333] rounded-full"
                                     style={{ width: `${ratio}%` }}
                                   />
@@ -1829,7 +1951,7 @@ export default function App() {
                                   <span className="text-white font-black">{riskBlock.count} ({ratio}%)</span>
                                 </div>
                                 <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                                  <div 
+                                  <div
                                     className={`h-full ${riskBlock.color} rounded-full`}
                                     style={{ width: `${ratio}%` }}
                                   />
@@ -1858,7 +1980,7 @@ export default function App() {
       {/* Mic dictating panel modal overlay */}
       <AnimatePresence>
         {isVoiceListening && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1872,7 +1994,7 @@ export default function App() {
               <p className="text-xs text-[#2C2A28] leading-relaxed font-medium bg-[#FBF4EE] p-4 rounded-xl border border-[#E7D4C2]">
                 {voiceTranscript || "Say 'What should I do now?' or ask general workload questions."}
               </p>
-              <button 
+              <button
                 onClick={() => setIsVoiceListening(false)}
                 className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-[#6B5A4D] rounded-lg text-xs font-semibold cursor-pointer border border-[#E7D4C2] transition-colors"
               >
@@ -1903,7 +2025,7 @@ export default function App() {
                       <p className="text-[9px] text-[#6B5A4D] font-bold">Quick Consult Cockpit</p>
                     </div>
                   </div>
-                  <button 
+                  <button
                     onClick={() => setIsChatWidgetOpen(false)}
                     className="p-1 hover:bg-[#FBF4EE] rounded-lg border border-[#E7D4C2] transition-colors cursor-pointer"
                   >
@@ -1951,8 +2073,8 @@ export default function App() {
                           </div>
                         )}
                         <div className={`p-2.5 rounded-2xl text-xs max-w-[80%] font-medium ${
-                          isAI 
-                            ? "bg-white text-[#2C2A28] border border-[#E7D4C2] rounded-tl-none" 
+                          isAI
+                            ? "bg-white text-[#2C2A28] border border-[#E7D4C2] rounded-tl-none"
                             : "bg-[#B87333] text-white rounded-tr-none"
                         }`}>
                           {msg.text}
@@ -1971,7 +2093,7 @@ export default function App() {
                 </div>
 
                 {/* Input Form */}
-                <form 
+                <form
                   onSubmit={async (e) => {
                     e.preventDefault();
                     if (!chatInput.trim()) return;
@@ -1997,7 +2119,7 @@ export default function App() {
                     placeholder="Ask Guardian Coach..."
                     className="flex-1 bg-[#FBF4EE] border border-[#E7D4C2] rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-[#B87333]"
                   />
-                  <button 
+                  <button
                     type="submit"
                     className="p-2 bg-[#B87333] hover:bg-[#9A5A25] text-white rounded-xl cursor-pointer transition-colors"
                   >

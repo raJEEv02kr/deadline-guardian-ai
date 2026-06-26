@@ -38,7 +38,7 @@ body {
   pointer-events: none;
   z-index: 0;
   background-size: 60px 60px;
-  background-image: 
+  background-image:
     linear-gradient(to right, rgba(184, 115, 51, 0.02) 1px, transparent 1px),
     linear-gradient(to bottom, rgba(184, 115, 51, 0.02) 1px, transparent 1px);
 }
@@ -190,6 +190,22 @@ body {
 
 .animate-pulse-glow {
   animation: pulseGlow 4s infinite ease-in-out;
+}
+
+/* Live Clock Widget Animations */
+@keyframes clockLivePulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 8px rgba(244, 63, 94, 0.6);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 12px rgba(244, 63, 94, 0.8);
+  }
+}
+
+.animate-clock-live {
+  animation: clockLivePulse 2s infinite ease-in-out;
 }
 
 
