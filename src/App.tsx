@@ -126,7 +126,7 @@ export default function App() {
 
   // Demo user trigger to unlock system for easy evaluation
   const bypassAuth = () => {
-    setCurrentUser({ uid: "demo_judge", email: "judge@googlehackathon.com", displayName: "Vibe2Ship Judge" });
+    setCurrentUser({ uid: "demo_judge", email: "judge@googlehackathon.com", displayName: "Demo_Judge" });
     setActiveTab("dashboard");
   };
 
