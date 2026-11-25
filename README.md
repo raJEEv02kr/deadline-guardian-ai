@@ -1,7 +1,6 @@
 # Deadline Guardian AI 🛡️
 > **"Your AI Partner Against Missed Deadlines"**
 
-Submitted for the **Vibe2Ship AI Hackathon**  
 Selected Problem Statement: **"The Last-Minute Life Saver"**
 
 ---
